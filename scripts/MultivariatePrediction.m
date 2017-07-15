@@ -36,7 +36,7 @@ dirs.data = '../data';
 dirs.mask = '../masks';
 dirs.results = '../results';
 dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlBin_Cntrl4ClosePersNom');
-dirs.output = fullfile(dirs.results,'ConfoundControlled_MVPA');
+dirs.output = fullfile(dirs.results,'MVPA');
 
 % Make output directory if it doesn't exist
 if ~exist(dirs.output)
