@@ -17,7 +17,7 @@
 %   SPM available at http://www.fil.ion.ucl.ac.uk/spm/
 
 clear all
-run_regression = 1;
+run_regression = 0;
 explained_threshold = 35;
 font_size = 24;
 
