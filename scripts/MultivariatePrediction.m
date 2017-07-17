@@ -7,9 +7,11 @@
 % Parameters:
 %   run_regression: 1 = run the regression analyses, 0 skip the regression analyses and go to
 %   summary figures
-%   
 %   explained_threshold = cumulative % of variance explained of retained components 
 % 
+% Outputs: For each ROI, generates a .mat file containing the predicted Hub category over all cross-
+% validation iterations; and a map of regression weights. 
+%
 % Dependencies:
 %   CANlabCore Toolbox available at https://github.com/canlab/CanlabCore
 %   NifTI toolbox available at 
@@ -28,7 +30,6 @@ font_size = 24;
 addpath(genpath('../../CanlabCore')) 
 addpath(genpath('../../NIfTI')) 
 addpath(genpath('../spm12'))
-
 % addpath(genpath('/Users/yuanchangleong/spm12'))
 
 % Set Directories 
