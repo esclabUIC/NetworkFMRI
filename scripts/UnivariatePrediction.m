@@ -23,13 +23,12 @@ run_regression = 1;
 font_size = 24;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                             Setup                                               % 
+%                                             Setup                                                % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Add Toolboxes
 addpath(genpath('../../CanlabCore')) 
 addpath(genpath('../../NIfTI')) 
-% addpath(genpath('../spm12'))
-addpath(genpath('/Users/yuanchangleong/spm12'))
+addpath(genpath('../spm12'))
 
 % Set Directories 
 dirs.data = '../data';
@@ -153,6 +152,9 @@ for mm = 1:nmask
 end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                Compute Forced-Choice Accuracy                                    % 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Loop over ROIs 
 for rr = 1:length(mask_names)
     load(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,rr}(1:end-4))));

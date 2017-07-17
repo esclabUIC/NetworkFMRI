@@ -30,7 +30,6 @@ font_size = 24;
 addpath(genpath('../../CanlabCore')) 
 addpath(genpath('../../NIfTI')) 
 addpath(genpath('../spm12'))
-% addpath(genpath('/Users/yuanchangleong/spm12'))
 
 % Set Directories 
 dirs.data = '../data';
