@@ -1,5 +1,5 @@
 ## Neural detection of socially valued community members
-This repository hosts the online supplement for the paper "Neural detections of socially valued community members" (Morelli et. al, in prep).  
+This repository hosts the online supplement for the paper "Neural detection of socially valued community members" (Morelli et. al, in prep).  
 For a preprint of the paper, please contact Sylvia Morelli at smorelli@uic.edu.  
 
 ### Prediction Analyses
