@@ -20,7 +20,7 @@ ROI masks used for the analyses can be found [here](masks)
 [Compare_RMSE.m](scripts/Compare_RMSE.m): Compares univariate and multivariate prediction accuracy using root mean squared error (RMSE). 
 
 #### Pattern Weights
-Multivariate pattern weights learned by LASSO-PCR algorithm for each ROI can be found [here](results/MVPA)  
+Multivariate pattern weights learned by LASSO-PCR algorithm for each ROI can be found [here](results/MVPA) ([roi_name.nii])  
 
 #### Dependencies  
 To run the prediction scripts, you will need to download the following toolboxes:  
