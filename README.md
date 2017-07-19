@@ -19,9 +19,11 @@ ROI masks used for the analyses can be found [here](masks)
 
 [Compare_RMSE.m](scripts/Compare_RMSE.m): Compares univariate and multivariate prediction accuracy using root mean squared error (RMSE). 
 
+#### Pattern Weights
+Multivariate pattern weights learned by LASSO-PCR algorithm for each ROI can be found [here](results/MVPA)  
+
 #### Dependencies  
 To run the prediction scripts, you will need to download the following toolboxes:  
-
 * [CANlabCore Toolbox](https://github.com/canlab/CanlabCore)   
 * [NifTI toolbox](https://www.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image)  
 * [SPM](http://www.fil.ion.ucl.ac.uk/spm/)  
