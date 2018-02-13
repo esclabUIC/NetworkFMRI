@@ -36,8 +36,9 @@ addpath(genpath('/Users/yuanchangleong/Documents/spm12'))
 dirs.data = '../data';
 dirs.mask = '../masks';
 dirs.results = '../results';
-dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlBin_Cntrl4ClosePersNom');
-dirs.output = fullfile(dirs.results,'MVPA');
+dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlQuart_Cntrl4Three');
+dirs.output = fullfile(dirs.results,'MVPAQuartile_Cntrl4Three');
+
 
 % Make output directory if it doesn't exist
 if ~exist(dirs.output)
@@ -55,7 +56,7 @@ Subjects = load(fullfile(dirs.data,'subject_numbers.txt'));
 nSub = length(Subjects);
 
 % number of bins
-nbins = 3;
+nbins = 4;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                          Regression                                              % 
@@ -64,6 +65,7 @@ if run_regression
 
     % Loop over ROIs
     for mm = 1:nmask
+    %for mm = 4
         this_mask = fullfile(dirs.mask,mask_files{1,mm});
         fprintf('Running ROI: %s \n', this_mask);
         
@@ -79,10 +81,12 @@ if run_regression
                 AllTrainPaths{i} = train_paths;
                 switch f
                     case 1
-                        Y(i) = 3;
+                        Y(i) = 4;
                     case 2
-                        Y(i) = 2;
+                        Y(i) = 3;
                     case 3
+                        Y(i) = 2;
+                    case 4
                         Y(i) = 1;
                 end
                 SubID(i) = s;
@@ -96,7 +100,7 @@ if run_regression
         
         % zscore within subj
         for s = 1:nSub
-            AllTrain.dat(:,3*(s-1)+1:3*(s-1)+3) = nanzscore(AllTrain.dat(:,3*(s-1)+1:3*(s-1)+3),0,2);
+            AllTrain.dat(:,4*(s-1)+1:4*(s-1)+4) = nanzscore(AllTrain.dat(:,4*(s-1)+1:4*(s-1)+4),0,2);
         end
         
         % Run regression
@@ -112,6 +116,7 @@ if run_regression
             cumsum_explained = cumsum(explained);
             nPC = find(cumsum_explained > explained_threshold,1);
             [cverr, stats, optout] = predict(AllTrain, 'algorithm_name', 'cv_lassopcr', 'nfolds', SubID, 'numcomponents',nPC);
+            %[cverr, stats, optout] = predict(AllTrain, 'algorithm_name', 'cv_multregress', 'nfolds', SubID);
         end
         
         % Print out regression weight for each voxel
@@ -128,7 +133,7 @@ if run_regression
             this_yfit = stats.yfit(SubID == s);
             this_y = stats.Y(SubID == s);
             
-            for b = 1:3
+            for b = 1:4
                 pred_by_bin(s,b) = this_yfit(this_y == b);
             end
                        
@@ -143,7 +148,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                Compute Forced-Choice Accuracy                                    % 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Loop over ROIs 
 for rr = 1:length(mask_names)
     load(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,rr}(1:end-4))));
@@ -151,13 +156,14 @@ for rr = 1:length(mask_names)
     % Calculate mean forced choice accuracy
     FC(rr,1) = mean(pred_by_bin(:,2) > pred_by_bin(:,1)); 
     FC(rr,2) = mean(pred_by_bin(:,3) > pred_by_bin(:,2)); 
-    FC(rr,3) = mean(pred_by_bin(:,3) > pred_by_bin(:,1)); 
+    FC(rr,3) = mean(pred_by_bin(:,4) > pred_by_bin(:,3)); 
+    FC(rr,4) = mean(pred_by_bin(:,4) > pred_by_bin(:,1)); 
     
     % Calcuate SE of forced choice accuracy
     FC_err(rr,1) = std(pred_by_bin(:,2) > pred_by_bin(:,1))/sqrt(nSub-1);
     FC_err(rr,2) = std(pred_by_bin(:,3) > pred_by_bin(:,2))/sqrt(nSub-1);
-    FC_err(rr,3) = std(pred_by_bin(:,3) > pred_by_bin(:,1))/sqrt(nSub-1);
-       
+    FC_err(rr,3) = std(pred_by_bin(:,4) > pred_by_bin(:,3))/sqrt(nSub-1);
+    FC_err(rr,4) = std(pred_by_bin(:,4) > pred_by_bin(:,1))/sqrt(nSub-1);   
 end
 
 % Intialize Figure
@@ -166,73 +172,77 @@ hold on
 set(gcf,'Position',[100 100 1000 400]);
 
 % Setup plot
-y = reshape(FC',1,27);
-x = [1,2,3,5,6,7,9,10,11,13,14,15,17,18,19,21,22,23,25,26,27,29,30,31,33,34,35];
+y = reshape(FC',1,36);
+x = [1:44];
+x(:,[5,10,15,20,25,30,35,40]) = []; 
 
 % Color for mentalizing ROIs
 bar_col = [203,24,29;   % 3rd
+    254,229,217;
     252,174,145;        % 1st 
     251,106,74];        % 2nd
 
 % Color for VS
 bar_col2 = [33,113,181;
+    239,243,255;
     189,215,231;
     107,174,214];
 
 % Color for V1
-bar_col3 = [0.5,0.5,0.5;
-    0.9,0.9,0.9;
-    0.7,0.7,0.7];
+bar_col3 = [0.4,0.4,0.4;
+    0.95,0.95,0.95;
+    0.8,0.8,0.8;
+    0.6,0.6,0.6];
 
 bar_col = bar_col/255;
 bar_col2 = bar_col2/255;
 
 % Plot mentalizing ROIs
-for i = 1:21
+for i = 1:28
     b = bar(x(i),y(i),0.7);
-    this_col = mod(i,3)+1;
+    this_col = mod(i,4)+1;
     set(b,'facecolor',bar_col(this_col,:))
 end
 
 % Plot VS
-for i = 22:24
+for i = 29:32
     b = bar(x(i),y(i),0.7);
-    this_col = mod(i,3)+1;
+    this_col = mod(i,4)+1;
     set(b,'facecolor',bar_col2(this_col,:))
 end
 
 % Plot V1
-for i = 25:27
+for i = 33:36
     b = bar(x(i),y(i),0.7);
-    this_col = mod(i,3)+1;
+    this_col = mod(i,4)+1;
     set(b,'facecolor',bar_col3(this_col,:))
 end
 
 % Plot error bars
-h = errorbar(x,y,reshape(FC_err',1,27));
+h = errorbar(x,y,reshape(FC_err',1,36));
 set(h,'Color',[0,0,0],'linestyle','none');
 
 % Chance line
-plot([0,36],[0.5,0.5],'Color','k','LineStyle','--','LineWidth',2);
+plot([0,45],[0.5,0.5],'Color','k','LineStyle','--','LineWidth',2);
 
 % Adjust axis
 ylabel('Forced Choice Accuracy');
-set(gca,'xtick',[2,6,10,14,18,22,26,30,34],'xticklabel',mask_names)
+set(gca,'xtick',[2.5:5:43.5],'xticklabel',mask_names)
 set(gca,'ytick',[0:0.25:1]);
 
 % Run and plot Binomial Test Results
-for rr = 1:length(mask_names)*3
+for rr = 1:length(mask_names)*4
     p_value(rr) = myBinomTest(y(rr)*nSub,nSub,0.5);
 end
 sig = x(p_value < 0.05);
 scatter(sig,repmat(0.95,1,length(sig)),30,'k','*');
-axis([0 36 0 1]);
+axis([0 45 0 1]);
 set(gca,'FontSize',20)
  
 % Save Figure
 fig_dest = fullfile(dirs.output,'ForcedChoiceAcc');
 set(gcf,'paperpositionmode','auto');
-print(fig,'-depsc',fig_dest);
+print(fig,fig_dest,'-depsc');
 
 % Output table:
 row_names = {'Low vs. Mid','Mid vs. High','Low vs. High'};

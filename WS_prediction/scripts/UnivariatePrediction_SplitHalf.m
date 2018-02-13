@@ -19,23 +19,25 @@
 %   SPM available at http://www.fil.ion.ucl.ac.uk/spm/
 
 clear all
-run_regression = 1;
+run_regression = 0;
+run_FC = 0;
 font_size = 24;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                             Setup                                                % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Add Toolboxes
-addpath(genpath('../../CanlabCore')) 
-addpath(genpath('../../NIfTI')) 
+addpath(genpath('../../../CanlabCore')) 
+addpath(genpath('../../../NIfTI')) 
 addpath(genpath('/Users/yuanchangleong/Documents/spm12'))
 
+
 % Set Directories 
-dirs.data = '../data';
-dirs.mask = '../masks';
-dirs.results = '../results';
-dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlBin_Cntrl4ClosePersNom');
-dirs.output = fullfile(dirs.results,'Univariate');
+dirs.data = '../glm';
+dirs.mask = '../../masks';
+dirs.results = '../../results';
+dirs.input = fullfile(dirs.data,'faces60_tmap');
+dirs.output = fullfile(dirs.results,'Univariate_WS_SplitHalf');
 
 % Make output directory if it doesn't exist
 if ~exist(dirs.output)
@@ -49,7 +51,7 @@ nmask = length(mask_files);
 mask_names = {'Mentalizing','MPFC','PMC','RTP','LTP','RTPJ','LTPJ','Striatum','V1'};
 
 % Subject Information 
-Subjects = load(fullfile(dirs.data,'subject_numbers.txt'));
+Subjects = load('../../data/subject_numbers.txt');
 nSub = length(Subjects);
 
 % number of bins
@@ -61,98 +63,86 @@ nbins = 3;
 if run_regression
 
 % Loop over ROIs
-for mm = 1
+for mm = 1:nmask
     this_mask = fullfile(dirs.mask,mask_files{1,mm});
     fprintf('Running ROI: %s \n', this_mask);
     
-    i = 1;
+    pred_by_bin = [];
     
     % Get paths
     for s = 1:nSub
-        train_data = fullfile(dirs.input,sprintf('SN_%s',num2str(Subjects(s))));
         
-        % Get bin
-        for f = 1:nbins
-            train_paths = fullfile(train_data,sprintf('spmT_000%i.img',f));
-            AllTrainPaths{i} = train_paths;
-            switch f
-                case 1
-                    Y(i) = 3;
-                case 2
-                    Y(i) = 2;
-                case 3
-                    Y(i) = 1;
-            end
-            SubID(i) = s;
-            i = i + 1;
+        stats.yfit = [];
+        stats.Y = [];
+        
+        % load data of this subject
+        thisdat_path = fullfile(dirs.input,sprintf('subj%s_tmap.nii.gz',num2str(Subjects(s))));
+        thisdata = fmri_data(thisdat_path,this_mask);
+        
+        % averavge over ROI
+        thisdat.mean = mean(thisdata.dat);
+        
+        % construct Y matrix
+        load(fullfile('../regmat',sprintf('%i_FacesIndegreeFactorCntrlBin.mat',Subjects(s))));
+        thisdat.Y = [ones(length(indegreeT0_factor_cntrl_tertile1_onset),1) * 3;...
+            ones(length(indegreeT0_factor_cntrl_tertile2_onset),1) * 2;...
+            ones(length(indegreeT0_factor_cntrl_tertile3_onset),1)];
+        
+        TrialID = repmat([1,2],1,30);
+        
+        for t = 1
+            
+            train_raw = thisdat.mean(TrialID == t)';
+            train_raw_y = thisdat.Y(TrialID == t)';
+            
+            train_data(1,1) = mean(train_raw(train_raw_y == 1));
+            train_data(2,1) = mean(train_raw(train_raw_y == 2));
+            train_data(3,1) = mean(train_raw(train_raw_y == 3));
+            
+            train_y = [1 2 3]';
+                       
+            % Format training dataset
+            train_set = table(train_y, train_data,'VariableNames',{'Y','data'});
+            
+            % Train model
+            trained_model = fitlm(train_set,'Y~data');
+            
+            % Testing set
+            
+            test_raw = thisdat.mean(TrialID ~= t)';
+            test_raw_y = thisdat.Y(TrialID ~= t)';
+            
+            test_data(1,1) = mean(test_raw(test_raw_y == 1));
+            test_data(2,1) = mean(test_raw(test_raw_y == 2));
+            test_data(3,1) = mean(test_raw(test_raw_y == 3));
+            
+            test_y = [1 2 3]';
+            
+            % Format Testing set
+            test_set = table(test_y, test_data,'VariableNames',{'Y','data'});
+            
+            % Test data
+            this_ypred = predict(trained_model, test_set);
+            
         end
-    end
-    
-    % Get data
-    AllTrain=fmri_data(AllTrainPaths,this_mask);
-    AllTrain.Y = Y';
-    
-    thisdat.mean = nanmean(AllTrain.dat);
-    thisdat.Y = AllTrain.Y;
-    thisdat.SubID = SubID;
-
-    % zscore within subj
-    for s = 1:nSub
-        thisdat.mean(:,3*(s-1)+1:3*(s-1)+3) = nanzscore(thisdat.mean(:,3*(s-1)+1:3*(s-1)+3),0,2);
-    end
-    
-    stats.yfit = [];
-    stats.Y = thisdat.Y;
-    
-    % Run leave one-out cross validation
-    for s = 1:nSub
-        % Training set
-        train_data = thisdat.mean(SubID ~= s)';
-        train_y = thisdat.Y(SubID ~= s);
-        
-        % Format training dataset
-        train_set = table(train_y, train_data,'VariableNames',{'Y','data'});
-        
-        % Train model
-        trained_model = fitlm(train_set,'Y~data');
-        
-        % get coefficient
-        reg_coef(s,1) = trained_model.Coefficients.Estimate(2);
-        
-        % Testing set
-        test_data = thisdat.mean(SubID == s)';
-        test_y = thisdat.Y(SubID == s);
-        
-        % Format Testing set
-        test_set = table(test_y, test_data,'VariableNames',{'Y','data'});
-        
-        % Test data
-        this_ypred = predict(trained_model, test_set);
         
         stats.yfit = [stats.yfit; this_ypred];
-    end
-    
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                       Within Subject Stats                                               % 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-    within_sub_corr = NaN(nSub,1);
-    pred_by_bin = NaN(nSub,3);
-    
-    for s = 1:nSub
-        this_yfit = stats.yfit(SubID == s);
-        this_y = stats.Y(SubID == s);
+        stats.Y = [stats.Y; test_y];
         
         for b = 1:3
-            pred_by_bin(s,b) = this_yfit(this_y == b);
+            pred_by_bin(s,b) = stats.yfit(stats.Y == b);
         end
         
-        within_sub_corr(s) = corr(this_y,this_yfit);
-        
+        within_sub_corr(s) = corr(stats.yfit,stats.Y);
+                
     end
-    
+        
     save(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,mm}(1:end-4))),...
-        'pred_by_bin','within_sub_corr','stats','reg_coef');
+        'pred_by_bin','within_sub_corr');
+
 end
+
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -252,12 +242,4 @@ print(fig,fig_dest,'-depsc');
 row_names = {'Low vs. Mid','Mid vs. High','Low vs. High'};
 T = table(FC, FC_err, 'RowNames',mask_names)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                Compute Within-Subject Correlation                                % 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-all_corr = NaN(nSub,length(mask_names));
-fprintf('Mean Within-Subject Correlation \n')
-for rr = 1:length(mask_names)
-    load(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,rr}(1:end-4))));
-    fprintf('%s: %0.3f (%0.3f) \n',mask_names{rr},mean(within_sub_corr),std(within_sub_corr)/sqrt(length(within_sub_corr)-1));
-end
+

@@ -1,3 +1,5 @@
 .DS_Store
 data/FacesIndegreeFactorCntrlBin_Cntrl4ClosePersNom/*.hdr
 data/FacesIndegreeFactorCntrlBin_Cntrl4ClosePersNom/*.img
+masks/Neurosynth*
+data/*

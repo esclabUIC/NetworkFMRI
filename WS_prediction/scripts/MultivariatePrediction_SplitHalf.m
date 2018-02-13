@@ -1,8 +1,12 @@
 %% Multivariate Prediction
+% YC Leong 1/3/2018
+% Edited to do within-subject prediction
+
 % YC Leong 7/15/2017 
 % This scripts takes in beta maps associated which each hub category of all 50 participants, and 
 % trains a Lasso-PCA algorithm to predict hub category following a leave-one-participant-out 
 % cross-validation procedure.
+%
 % 
 % Parameters:
 %   run_regression: 1 = run the regression analyses, 0 skip the regression analyses and go to
@@ -19,25 +23,25 @@
 %   SPM available at http://www.fil.ion.ucl.ac.uk/spm/
 
 clear all
-run_regression = 0;
-explained_threshold = 35;
+run_regression = 1;
+run_FC = 1;
+explained_threshold = 100;
 font_size = 24;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                             Setup                                               % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Add Toolboxes
-addpath(genpath('../../CanlabCore')) 
-addpath(genpath('../../NIfTI')) 
+addpath(genpath('../../../CanlabCore')) 
+addpath(genpath('../../../NIfTI')) 
 addpath(genpath('/Users/yuanchangleong/Documents/spm12'))
 
-
 % Set Directories 
-dirs.data = '../data';
-dirs.mask = '../masks';
-dirs.results = '../results';
-dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlBin_Cntrl4ClosePersNom');
-dirs.output = fullfile(dirs.results,'MVPA');
+dirs.data = '../glm';
+dirs.mask = '../../masks';
+dirs.results = '../../results';
+dirs.input = fullfile(dirs.data,'faces60_tmap');
+dirs.output = fullfile(dirs.results,'MVPA_WS_SplitHalf');
 
 % Make output directory if it doesn't exist
 if ~exist(dirs.output)
@@ -51,7 +55,7 @@ nmask = length(mask_files);
 mask_names = {'Mentalizing','MPFC','PMC','RTP','LTP','RTPJ','LTPJ','Striatum','V1'};
 
 % Subject Information 
-Subjects = load(fullfile(dirs.data,'subject_numbers.txt'));
+Subjects = load('../../data/subject_numbers.txt');
 nSub = length(Subjects);
 
 % number of bins
@@ -62,88 +66,68 @@ nbins = 3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if run_regression
 
+    TrialID = repmat([1,2],1,30);
+    FoldID = [1 1 1 2 2 2];
+    
     % Loop over ROIs
     for mm = 1:nmask
         this_mask = fullfile(dirs.mask,mask_files{1,mm});
         fprintf('Running ROI: %s \n', this_mask);
         
-        i = 1;
+         pred_by_bin = [];
         
-        % Get paths
         for s = 1:nSub
-            train_data = fullfile(dirs.input,sprintf('SN_%s',num2str(Subjects(s))));
+            fprintf('Running subject %i \n', Subjects(s));
             
-            % Get bin
-            for f = 1:nbins
-                train_paths = fullfile(train_data,sprintf('spmT_000%i.img',f));
-                AllTrainPaths{i} = train_paths;
-                switch f
-                    case 1
-                        Y(i) = 3;
-                    case 2
-                        Y(i) = 2;
-                    case 3
-                        Y(i) = 1;
-                end
-                SubID(i) = s;
-                i = i + 1;
+            train_data = [];
+            test_data = [];
+            
+            % load data of this subject
+            data_path = fullfile(dirs.input,sprintf('subj%s_tmap.nii.gz',num2str(Subjects(s))));
+            all_data = fmri_data(data_path,this_mask);
+            
+            % construct Y matrix 
+            load(fullfile('../regmat',sprintf('%i_FacesIndegreeFactorCntrlBin.mat',Subjects(s))));
+            all_data.Y = [ones(length(indegreeT0_factor_cntrl_tertile1_onset),1) * 3;...
+                ones(length(indegreeT0_factor_cntrl_tertile2_onset),1) * 2;...
+                ones(length(indegreeT0_factor_cntrl_tertile3_onset),1)];
+            
+            train_raw = all_data.dat(:,TrialID == 1);
+            train_y = all_data.Y(TrialID == 1,:);
+            
+            test_raw = all_data.dat(:,TrialID == 2);
+            test_y = all_data.Y(TrialID == 2,:);
+
+            for b = 1:3   
+                train_data(:,b) = mean(train_raw(:,train_y == b),2);
+                test_data(:,b) = mean(test_raw(:,test_y == b),2);
             end
-        end
-        
-        % Get data
-        AllTrain=fmri_data(AllTrainPaths,this_mask);
-        AllTrain.Y = Y';
-        
-        % zscore within subj
-        for s = 1:nSub
-            AllTrain.dat(:,3*(s-1)+1:3*(s-1)+3) = nanzscore(AllTrain.dat(:,3*(s-1)+1:3*(s-1)+3),0,2);
-        end
-        
-        % Run regression
-        if explained_threshold == 100
-            % Retain all components
-            [cverr, stats, optout] = predict(AllTrain, 'algorithm_name', 'cv_lassopcr', 'nfolds', SubID);
-            explained = NaN;
-            cumsum_explained = NaN;
-            nPC = NaN;
-        else
-            % Retain components that retain X% of the variance 
-            [coeff,score,latent,tsquared,explained,mu] = pca(AllTrain.dat);
-            cumsum_explained = cumsum(explained);
-            nPC = find(cumsum_explained > explained_threshold,1);
-            [cverr, stats, optout] = predict(AllTrain, 'algorithm_name', 'cv_lassopcr', 'nfolds', SubID, 'numcomponents',nPC);
-        end
-        
-        % Print out regression weight for each voxel
-        stats.weight_obj.dat = stats.weight_obj.dat/std(stats.weight_obj.dat);
-        unthresholded = stats.weight_obj;
-        unthresholded.fullpath = fullfile(dirs.output,sprintf('%s.nii',mask_files{1,mm}(1:end-4)));
-        write(unthresholded);
-        
-        % Within Subject Stats                                             
-        within_sub_corr = NaN(nSub,1);
-        pred_by_bin = NaN(nSub,3);
-        
-        for s = 1:nSub
-            this_yfit = stats.yfit(SubID == s);
-            this_y = stats.Y(SubID == s);
             
-            for b = 1:3
-                pred_by_bin(s,b) = this_yfit(this_y == b);
-            end
-                       
-            within_sub_corr(s) = corr(this_y,this_yfit);
+            both_data = [train_data test_data];
+            both_Y = [1 2 3 1 2 3]';
             
+            all_data.Y = both_Y;
+            all_data.dat = both_data;
+
+           [cverr, stats, optout] = predict(all_data, 'algorithm_name', 'cv_lassopcr', 'nfolds',FoldID);
+
+           for b = 1:3
+               pred_by_bin(s,b) = mean(stats.yfit(stats.Y == b & [0 0 0 1 1 1]'));
+           end
+           
+           within_sub_corr(s) = corr(stats.yfit,stats.Y);
+
         end
         
-        save(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,mm}(1:end-4))),...
-            'pred_by_bin','within_sub_corr','stats','explained','cumsum_explained','nPC');  
+    save(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,mm}(1:end-4))),...
+        'pred_by_bin','within_sub_corr');
+ 
     end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                Compute Forced-Choice Accuracy                                    % 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % Loop over ROIs 
 for rr = 1:length(mask_names)
     load(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,rr}(1:end-4))));
@@ -232,18 +216,8 @@ set(gca,'FontSize',20)
 % Save Figure
 fig_dest = fullfile(dirs.output,'ForcedChoiceAcc');
 set(gcf,'paperpositionmode','auto');
-print(fig,'-depsc',fig_dest);
+print(fig,fig_dest,'-depsc');
 
 % Output table:
 row_names = {'Low vs. Mid','Mid vs. High','Low vs. High'};
 T = table(FC, FC_err, 'RowNames',mask_names)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                Compute Within-Subject Correlation                                % 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-all_corr = NaN(nSub,length(mask_names));
-fprintf('Mean Within-Subject Correlation \n')
-for rr = 1:length(mask_names)
-    load(sprintf('%s.mat',fullfile(dirs.output,mask_files{1,rr}(1:end-4))));
-    fprintf('%s: %0.3f (%0.3f) \n',mask_names{rr},mean(within_sub_corr),std(within_sub_corr)/sqrt(length(within_sub_corr)-1));
-end
