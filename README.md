@@ -22,12 +22,14 @@ ROI masks used for the analyses can be found [here](masks)
 [ParcelSearchLightAnalysis.m](scripts/whole-brain/ParcelSearchLightAnalysis.m): Prediction analyses using whole-brain parcellation ROIs.  
 
 The following folders contain scripts for additional control analyses.  
-[Median_scripts](Median_scripts): Analyses when splitting data into two bins  
+
+[Median_scripts](Median_scripts): Analyses when splitting data into two bins   
+
 [Quartile_scripts](Quartile_scripts): Analyses when splitting data into four bins  
-[NoControlScripts](NoControlScripts): Analyses when not controlling for personal nomination and closeness
-[WS_prediction](WS_prediction): Within-Subject Prediction Analyses
 
+[NoControlScripts](NoControlScripts): Analyses when not controlling for personal nomination and closeness  
 
+[WS_prediction](WS_prediction): Within-Subject Prediction Analyses  
 
 #### Pattern Weights
 Multivariate pattern weights learned by LASSO-PCR algorithm for each ROI can be found [here](results/MVPA) ([roi_name.nii])  
