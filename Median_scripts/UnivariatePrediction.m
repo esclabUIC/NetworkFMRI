@@ -34,8 +34,8 @@ addpath(genpath('/Users/yuanchangleong/Documents/spm12'))
 dirs.data = '../data';
 dirs.mask = '../masks';
 dirs.results = '../results';
-dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlMedian_Cntrl4Three');
-dirs.output = fullfile(dirs.results,'UnivariateMedian_Cntrl4Three');
+dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlMedian_Cntrl4ClosePersNom');
+dirs.output = fullfile(dirs.results,'UnivariateMedian');
 
 % Make output directory if it doesn't exist
 if ~exist(dirs.output)

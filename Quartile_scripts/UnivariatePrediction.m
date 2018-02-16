@@ -19,7 +19,7 @@
 %   SPM available at http://www.fil.ion.ucl.ac.uk/spm/
 
 clear all
-run_regression = 0;
+run_regression = 1;
 font_size = 24;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,8 +34,8 @@ addpath(genpath('/Users/yuanchangleong/Documents/spm12'))
 dirs.data = '../data';
 dirs.mask = '../masks';
 dirs.results = '../results';
-dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlQuart_Cntrl4Three');
-dirs.output = fullfile(dirs.results,'UnivariateQuartile_Cntrl4Three');
+dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlQuart_Cntrl4ClosePersNoms');
+dirs.output = fullfile(dirs.results,'Univariate_Quartile');
 
 % Make output directory if it doesn't exist
 if ~exist(dirs.output)

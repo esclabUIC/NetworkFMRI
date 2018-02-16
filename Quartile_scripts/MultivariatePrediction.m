@@ -36,8 +36,8 @@ addpath(genpath('/Users/yuanchangleong/Documents/spm12'))
 dirs.data = '../data';
 dirs.mask = '../masks';
 dirs.results = '../results';
-dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlQuart_Cntrl4Three');
-dirs.output = fullfile(dirs.results,'MVPAQuartile_Cntrl4Three');
+dirs.input = fullfile(dirs.data,'FacesIndegreeFactorCntrlQuart_Cntrl4ClosePersNoms');
+dirs.output = fullfile(dirs.results,'MVPA_Quartile');
 
 
 % Make output directory if it doesn't exist
