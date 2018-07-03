@@ -15,7 +15,8 @@ ROI masks used for the analyses can be found [here](masks)
 #### Scripts
 [UnivariatePrediction.m](scripts/UnivariatePrediction.m): Follows a leave-one-participant-out cross-validation procedure to predict hub category from the average t-values of held-out data in a given ROI.  
 
-[MultivariatePrediction.m](scripts/MultivariatePrediction.m): Follows a leave-one-participant-out cross-validation procedure to train a LASSO-PCR algorithm to predict hub category from neural patterns of held-out data in a given ROI.  
+[MultivariatePrediction.m](scripts/MultivariatePrediction.m): Follows a leave-one-participant-out cross-validation procedure to train a LASSO-PCR algorithm to predict hub category from neural patterns of held-out data in a given ROI.    
+- [Script](zSpace_scripts/MultivariatePrediction.m) for the same analysis with the mean ROI signal removed
 
 [Compare_RMSE.m](scripts/Compare_RMSE.m): Compares univariate and multivariate prediction accuracy using root mean squared error (RMSE). 
 
@@ -30,6 +31,8 @@ The following folders contain scripts for additional control analyses.
 [NoControlScripts](NoControlScripts): Analyses when not controlling for personal nomination and closeness  
 
 [WS_prediction](WS_prediction): Within-Subject Prediction Analyses  
+
+[Comparing increase in response between terciles](output_prediction)
 
 #### Pattern Weights
 Multivariate pattern weights learned by LASSO-PCR algorithm for each ROI can be found [here](results/MVPA) ([roi_name.nii])  
