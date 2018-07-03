@@ -16,7 +16,7 @@ ROI masks used for the analyses can be found [here](masks)
 [UnivariatePrediction.m](scripts/UnivariatePrediction.m): Follows a leave-one-participant-out cross-validation procedure to predict hub category from the average t-values of held-out data in a given ROI.  
 
 [MultivariatePrediction.m](scripts/MultivariatePrediction.m): Follows a leave-one-participant-out cross-validation procedure to train a LASSO-PCR algorithm to predict hub category from neural patterns of held-out data in a given ROI.    
-- [MultivariatePrediction_zSpace.m](zSpace_scripts/MultivariatePrediction.m): Same analysis with the mean ROI signal removed
+- [MultivariatePrediction_zSpace.m](zSpace_scripts/MultivariatePrediction_zSpace.m): Same analysis with the mean ROI signal removed
 
 [Compare_RMSE.m](scripts/Compare_RMSE.m): Compares univariate and multivariate prediction accuracy using root mean squared error (RMSE). 
 
