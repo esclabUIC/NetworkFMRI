@@ -1,0 +1,15 @@
+function [var,time] = DisplayITI(Window,var)
+
+    time = GetSecs();
+
+    Screen('TextSize',Window,100);
+    Screen('FillRect',Window,var.bkg_color);
+    DrawFormattedText(Window,'+','center','center',var.textcolor);
+    Screen('Flip',Window);
+    Screen('TextSize',Window,var.textsize);
+
+    while time < var.ref_end
+        time = GetSecs()-var.abs_start;
+    end
+
+end

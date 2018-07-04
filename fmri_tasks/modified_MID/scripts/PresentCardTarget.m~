@@ -1,0 +1,345 @@
+% This function displays the cues:
+
+function data = PresentCardTarget(Window,var,data,ind)
+    
+    % Get function start time:
+    startT = GetSecs();
+    data.target_onset(ind) = startT-var.abs_start;
+    
+    Screen('TextSize',Window,var.cuetextsize);
+    
+    % center the cue-box on screen:
+    [cuebox,dh,dv] = CenterRect(var.cue_box,var.winrect);
+    
+    % Center the card-box on screen:
+    [cardbox,dh,dv] = CenterRect(var.card_box,var.winrect);
+    cardbox(2) = cardbox(2)+var.card_distance_from_cue;
+    cardbox(4) = cardbox(4)+var.card_distance_from_cue;
+
+    % get the trial setup info from the block_type_index master design
+    % cellarray:
+    person = var.block_type_index{ind}(1);
+    trialtype = var.block_type_index{ind}(2);
+    arrow_orient = var.block_type_index{ind}(4);
+    
+    
+    computer_selection_trial = any(person == var.computer_selection_trials);
+    
+    
+    [uparrowbox,dh,dv] = CenterRect(var.arrowrect,cardbox);
+    [downarrowbox,dh,dv] = CenterRect(var.arrowrect,cardbox);
+    
+    
+    
+    if arrow_orient
+        uparrow_offset = var.arrow_offset;
+        downarrow_offset = -var.arrow_offset;
+    else
+        uparrow_offset = -var.arrow_offset;
+        downarrow_offset = var.arrow_offset;
+    end
+    
+    
+    
+    uparrowbox(1) = uparrowbox(1)+uparrow_offset;
+    uparrowbox(3) = uparrowbox(3)+uparrow_offset;
+    downarrowbox(1) = downarrowbox(1)+downarrow_offset;
+    downarrowbox(3) = downarrowbox(3)+downarrow_offset;
+    
+    
+    % value depending on trialtype:
+    str_value = [var.type_strings{trialtype} var.value_extension];
+    
+    
+    % Draw shape and value depending on trialtype:
+    switch trialtype
+        case 1
+            shape = 'circle_highline';
+        case 2
+            shape = 'square_highline';
+        case 3
+            shape = 'circle_lowline';
+        case 4
+            shape = 'square_lowline';
+    end
+    
+    
+    
+    % make the card string box and center that inside the card box that we
+    % centered earlier. Double center!!
+    
+    if length(var.box_string) > 0
+        [questionbox,dh,dv] = CenterRect(Screen('TextBounds',Window,var.box_string),cardbox);
+    else
+        questionbox = [0 0 0 0];
+    end
+    
+    [valuebox,dh,dv] = CenterRect(Screen('TextBounds',Window, str_value),cuebox);
+    valuebox(2) = valuebox(2)+var.amount_distance_from_cue;
+
+    
+    [facebox,dh,dv] = CenterRect(var.facerect,cuebox);
+    facebox(2) = facebox(2)-var.face_distance_from_cue;
+    facebox(4) = facebox(4)-var.face_distance_from_cue;
+
+    
+    % create draw object for subfunction:
+    draw.cuebox = cuebox;
+    draw.cardbox = cardbox;
+    draw.facebox = facebox;
+    draw.face = var.faces{person};
+    draw.uparrowbox = uparrowbox;
+    draw.downarrowbox = downarrowbox;
+    draw.questionbox = questionbox;
+    draw.valuebox = valuebox;
+    draw.value = str_value;
+    draw.player = var.players{person};
+    draw.player_selection = 0;
+    draw.computer_selection = 0;
+    draw.computer_trial = computer_selection_trial;
+    draw.shape = shape;
+    
+    DrawItems(Window,var,draw)
+    
+    
+    
+    if computer_selection_trial
+        
+        countdown = var.computer_resp_range(1) + ...
+            (var.computer_resp_range(2) - var.computer_resp_range(1))*rand();
+        
+        timer = GetSecs()-var.abs_start;
+        
+        countdown = timer+countdown;
+        
+        while timer < countdown
+            timer = GetSecs()-var.abs_start;
+        end
+        
+        if randi(2) == 1
+            draw.computer_selection = 'up';
+            data.computer_chose_higher(ind) = 1;
+        else
+            draw.computer_selection = 'down';
+            data.computer_chose_higher(ind) = 0;
+        end
+        
+        DrawItems(Window,var,draw)
+        
+    else
+        
+        data.computer_chose_higher(ind) = -1;
+    
+    end
+    
+
+    % Initialize some variables at 0:
+    selected = 0;
+    left = 0;
+    right = 0;
+    
+    
+    
+    timer = GetSecs()-var.abs_start;
+    
+    % This is the decision loop. It is the only programmatically complicated
+    % section of the experiment because of some button-press oddities:
+    
+    % check for a keypress during the target presentation, timed according
+    % to the current_calibration variable determined above
+    
+    
+    [key,rt] = GetKey({'1!','4$'},var.ref_end-timer,[],-1);
+    
+    if iscell(key)
+       key=key{1}; 
+    end
+    
+    if isnan(key)
+        key = 0;
+        data.target_key{ind} = 'none';
+        data.target_rt(ind) = -1;
+    else
+        data.target_key{ind} = key;
+        data.target_rt(ind) = rt;
+    end
+    
+    
+    if key
+        if strcmp('1!',key)
+            left = 1;
+            selected = 1;
+            if arrow_orient
+                data.chose_higher(ind) = 0;
+            else
+                data.chose_higher(ind) = 1;
+            end
+
+        elseif strcmp('4$',key)
+            right = 1;
+            selected = 1;
+            if arrow_orient
+                data.chose_higher(ind) = 1;
+            else
+                data.chose_higher(ind) = 0;
+            end
+
+        else
+            data.chose_higher(ind) = -1;
+            ebd
+    else
+        data.chose_higher(ind) = -1;
+    end
+
+    
+    
+    % Determine how much time has passed and wait to ref_end:
+    
+    timer = GetSecs()-var.abs_start;
+    
+    % If the subject made a selection and there is still time left before
+    % the iti, the selection they made will be displayed in yellow instead
+    % of white. Not required, but I think feedback is a nice touch...
+    if timer < var.ref_end
+        if selected
+            if left
+                if arrow_orient
+                    draw.player_selection = 'down';
+                else
+                    draw.player_selection = 'up';
+                end
+                DrawItems(Window,var,draw);
+            elseif right
+                if arrow_orient
+                    draw.player_selection = 'up';
+                else
+                    draw.player_selection = 'down';
+                end
+                DrawItems(Window,var,draw);
+            end
+        else
+            data.chose_higher(ind) = -1;
+        end
+    end
+    
+    while timer < var.ref_end
+        timer = GetSecs()-var.abs_start;
+    end
+    
+    Screen('TextSize',Window,var.textsize);
+    
+    % store elapsed relative time for slide:
+    data.target_dur(ind) = GetSecs()-startT;
+    
+
+end
+
+
+
+function DrawItems(Window,var,draw)
+
+    % make sure the screen has the correct background color
+    Screen('FillRect',Window,var.bkg_color);
+    
+    % draw the frame of the card
+    Screen('FrameRect',Window,var.textcolor,draw.cardbox,var.cue_pen);
+    
+    % draw the face
+    Screen('DrawTexture',Window,draw.face,[],draw.facebox);
+    
+    % draw the arrows
+    Screen('DrawTexture',Window,var.uparrow,[],draw.uparrowbox);
+    Screen('DrawTexture',Window,var.downarrow,[],draw.downarrowbox);
+    
+    % draw the number, the player name, and the value cue using the
+    % drawformattingtext function with the different pre-aligned text
+    % boxes:
+    if length(var.box_string) > 0
+        DrawFormattedText(Window,var.box_string,draw.questionbox(1),draw.questionbox(2),var.textcolor);
+    end
+    if var.amount_below_card
+        DrawFormattedText(Window,draw.value,draw.valuebox(1),draw.valuebox(2),var.textcolor);
+    end
+    
+    % if the computer has selected a box, draw it:
+    if draw.computer_selection ~= 0
+        if strcmp(draw.computer_selection,'up')
+            Screen('FrameRect',Window,var.computer_selection_color, draw.uparrowbox, var.cue_pen)
+        elseif strcmp(draw.computer_selection,'down')
+            Screen('FrameRect',Window,var.computer_selection_color, draw.downarrowbox, var.cue_pen)
+        end
+    end
+    
+    % if the player has selected a box, draw it, overriding computer
+    % selection box if necessary:
+    if var.subject_box_on_computer || ~draw.computer_trial
+        if draw.player_selection ~= 0
+            if strcmp(draw.player_selection,'up')
+                Screen('FrameRect',Window,var.player_selection_color, draw.uparrowbox, var.cue_pen)
+            elseif strcmp(draw.player_selection,'down')
+                Screen('FrameRect',Window,var.player_selection_color, draw.downarrowbox, var.cue_pen)
+            end
+        end
+    end
+    
+    shape = draw.shape;
+    cuebox = draw.cuebox;
+    
+    radius = (cuebox(3)-cuebox(1))/2;
+    deviation = sqrt((radius^2)/2);
+    
+    % Draw the full cue to screen:    
+    if strcmp(shape,'circle_plain')
+        Screen('FrameArc',Window,var.textcolor,cuebox,0,360,var.cue_pen);
+        
+    elseif strcmp(shape,'circle_lowline')
+        Screen('FrameArc',Window,var.textcolor,cuebox,0,360,var.cue_pen);
+        startX = cuebox(1)+radius-deviation;
+        startY = cuebox(2)+radius+deviation;
+        finX = cuebox(1)+radius+deviation;
+        finY = cuebox(2)+radius+deviation;
+        Screen('DrawLine',Window,var.textcolor,startX,startY,finX,finY,var.cue_pen);
+        
+    elseif strcmp(shape,'circle_midline')
+        Screen('FrameArc',Window,var.textcolor,cuebox,0,360,var.cue_pen);
+        startX = cuebox(1);
+        startY = cuebox(2)+radius;
+        finX = cuebox(3);
+        finY = cuebox(2)+radius;
+        Screen('DrawLine',Window,var.textcolor,startX,startY,finX,finY,var.cue_pen);
+        
+    elseif strcmp(shape,'circle_highline')
+        Screen('FrameArc',Window,var.textcolor,cuebox,0,360,var.cue_pen);
+        startX = cuebox(1)+radius-deviation;
+        startY = cuebox(2)+radius-deviation;
+        finX = cuebox(1)+radius+deviation;
+        finY = cuebox(2)+radius-deviation;
+        Screen('DrawLine',Window,var.textcolor,startX,startY,finX,finY,var.cue_pen);
+        
+    elseif strcmp(shape,'square_plain')
+        Screen('FrameRect',Window,var.textcolor,cuebox,var.cue_pen);
+        
+    elseif strcmp(shape,'square_lowline')
+        Screen('FrameRect',Window,var.textcolor,cuebox,var.cue_pen);
+        setY = cuebox(2)+radius+deviation;
+        Screen('DrawLine',Window,var.textcolor,cuebox(1),setY,cuebox(3),setY,var.cue_pen);
+        
+    elseif strcmp(shape,'square_midline')
+        Screen('FrameRect',Window,var.textcolor,cuebox,var.cue_pen);
+        setY = cuebox(2)+radius;
+        Screen('DrawLine',Window,var.textcolor,cuebox(1),setY,cuebox(3),setY,var.cue_pen);
+      
+    elseif strcmp(shape,'square_highline')
+        Screen('FrameRect',Window,var.textcolor,cuebox,var.cue_pen)
+        setY = cuebox(2)+radius-deviation;
+        Screen('DrawLine',Window,var.textcolor,cuebox(1),setY,cuebox(3),setY,var.cue_pen);
+        
+    end
+
+    
+    Screen('Flip',Window);
+
+end
+
+
+

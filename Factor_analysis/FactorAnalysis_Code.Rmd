@@ -1,0 +1,39 @@
+---
+title: "Neural detection of socially valued community members"
+authors: "Sylvia A. Morelli, Yuan C. Leong, Ryan W. Carlson, Monica Kullar, & Jamil Zaki"
+last updated: "February 15, 2018"
+---
+
+# Factor analysis with total nominations for each of 8 questions
+
+#install necessary packages
+install.packages('psych')
+install.packages('GPArotation')
+library(psych)
+library(GPArotation)
+
+#on next line, set your working directory to wherever data is located
+setwd('') 
+
+#load data
+d <- read.csv('FactorAnalysis_Data.csv')
+
+#select indegree for 8 questions
+indegree <- subset(d, select = c(2:9))
+
+#Run parallel analysis
+fa.parallel(indegree) 
+
+# Parallel analysis suggests that the number of factors =  1  and the number of components =  1
+
+#Do 1-factor solution
+FA <- fa(indegree, 1, rotate="none", fm="minres") 
+
+#plot results
+plot(FA)
+fa.diagram(FA, labels=names, cex=.5, rsize=.4, sort=TRUE)
+
+
+# bootstrapped with CIs
+solution_ci <- fa(indegree, 1, rotate="none", fm="minres",n.iter=1000)
+solution_ci

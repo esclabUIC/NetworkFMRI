@@ -1,6 +1,33 @@
 ## Neural detection of socially valued community members
-This repository hosts the online supplement for the paper "Neural detection of socially valued community members" (Morelli et. al, in prep).  
+This repository hosts the online supplement for the paper "Neural detection of socially valued community members" (Morelli, Leong, Carlson, Kullar, & Zaki, in press).  
 For a preprint of the paper, please contact Sylvia Morelli at smorelli@uic.edu.  
+
+### Social Network Nominations
+#### Data
+[Nomination Matrices](Nomination_matrices): Adjacency matrices of nominations for each of the 8 social network questions for the larger sample of 197 participants, as well as a matrix that represents the weighted average of these 8 questions
+
+#### Analyses
+[Factor Analysis](Factor_analysis): Factor analysis on indegree for each of the eight questions, using the full sample (i.e., 97 participants)
+
+### Pre-Scan Ratings of Dorm Relationships
+[Pre-Scan Ratings](Prescan_ratings): Anonymized data of scanner participants' ratings of each dorm member on various dimensions
+
+###Neuroimaging Tasks
+#### Face Viewing
+[Face Selection Algorithm](fmri_tasks/face_selection_algorithm/face_selection_algorithm.R): Script for selecting 30 target faces for each participant based on their pre-scan ratings
+[Face Selection Files](fmri_tasks/NetworkSelection): 30 target faces selected for each participant produced by the face selection algorithm
+[Face Viewing Task](fmri_tasks/faces/Faces.m): Main script to run the face-viewing task (but missing the folder of target photos to maintain anonymity)
+[Face Viewing Task Output](fmri_tasks/faces/data): Recorded onsets & durations for stimuli, as well as button presses
+[Preprocessing scripts](fmri_tasks/preprocessing): SPM preprocessing scripts for all tasks (including face viewing)
+[First-level scripts for parametric analyses](fmri_tasks/faces_firstlevel_parametric): SPM subject-level scripts us
+[First-level scripts for hub categories](fmri_tasks/faces_firstlevel_hubcategories): SPM subject-level scripts used to generate hub categories data (median, terciles, & quartiles) for univariate and multivariate prediction analyses
+[Parametric_analyses](Parametric_analyses) T maps for the parametric analyses reported in the paper and supporting appendix which can also be viewed in our [NeuroVault Collection](https://neurovault.org/collections/2715/) 
+
+#### Functional Reward Localizer 
+[Modified Monetary Incentive Delay Task](fmri_tasks/faces/SelfMID.m): Main script to run the modified MID (but missing the folder of photos to maintain anonymity)
+[MID Output](fmri_tasks/modified_MID/data): Recorded onsets & durations for stimuli, as well as button presses
+[Preprocessing scripts](fmri_tasks/preprocessing): SPM preprocessing scripts for all tasks (including MID)
+[First-level scripts](fmri_tasks/modified_MID_firstlevel):
 
 ### Prediction Analyses
 #### Data 
